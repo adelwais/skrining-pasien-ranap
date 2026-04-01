@@ -1,2 +1,224 @@
 # skrining-pasien-ranap
 alat bantu ahli gizi dalam melakukan skrining gizi kepada pasien rawat inap menggunakan tablet atau handphone masng-masing.
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Skrining & Analisis Gizi RS</title>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #3498db; --success: #27ae60; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); border-bottom: 3px solid var(--secondary); padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .section { padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; }
+        h3 { font-size: 1.1rem; color: var(--secondary); margin-top: 0; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; background: var(--success); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        button:hover { background: #219150; }
+        .result-box { display: none; margin-top: 25px; padding: 20px; border-radius: 8px; background: #eef2f3; border-left: 10px solid var(--secondary); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 12px; text-align: center; }
+        th { background: var(--primary); color: white; }
+        .status-tag { padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Sistem Skrining & Monitoring Gizi Pasien</h2>
+
+    <div class="grid">
+        <div class="section">
+            <h3>1. Identitas & Antropometri</h3>
+            <label>Nama Pasien</label>
+            <input type="text" id="nama" placeholder="Masukkan nama">
+            
+            <label>Tanggal Lahir</label>
+            <input type="date" id="tgl_lahir" onchange="hitungUsia()">
+            
+            <label>Usia (Otomatis)</label>
+            <input type="number" id="usia" readonly style="background: #eee;">
+
+            <label>Jenis Kelamin</label>
+            <select id="jk">
+                <option value="laki">Laki-laki</option>
+                <option value="perempuan">Perempuan</option>
+            </select>
+
+            <label>Berat Badan (kg)</label>
+            <input type="number" id="bb" step="0.1">
+
+            <label>Tinggi Badan (cm)</label>
+            <input type="number" id="tb" step="0.1">
+
+            <label>LiLA (cm)</label>
+            <input type="number" id="lila" step="0.1">
+        </div>
+       
+    <div class="section">
+        <h3>3. Analisis Recall 24 Jam (Asupan RS)</h3>
+        <div class="grid">
+            <div>
+                <label>Makan Pagi</label>
+                <select id="r_pagi">
+                    <option value="none">-- Pilih Menu --</option>
+                    <option value="nasi_p">Nasi Biasa (381 kkal)</option>
+                    <option value="tim_p">Nasi Tim (300 kkal)</option>
+                    <option value="bubur_p">Bubur (294 kkal)</option>
+                </select>
+                <label>Porsi Makan Pagi (%)</label>
+                <input type="number" id="p_pagi" value="100" min="0" max="100">
+            </div>
+            <div>
+                <label>Makan Siang & Malam (Kelas/Menu)</label>
+                <select id="r_siangmalam">
+                    <option value="none">-- Pilih Menu --</option>
+                    <option value="tim_v">Nasi Tim (Kelas 1/VIP/SVIP)</option>
+                    <option value="tim_r">Nasi Tim (Kelas 2/3)</option>
+                    <option value="bubur_v">Bubur (Kelas 1/VIP/SVIP)</option>
+                    <option value="bubur_r">Bubur (Kelas 2/3)</option>
+                </select>
+                <label>Rata-rata Porsi Siang & Malam (%)</label>
+                <input type="number" id="p_siangmalam" value="100" min="0" max="100">
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <label>Recall Snack / Selingan</label>
+                <input type="text" id="r_snack" placeholder="Contoh: Biskuit 1 keping">
+            </div>
+            <div>
+                <label>Makanan Luar RS</label>
+                <input type="text" id="r_luar" placeholder="Contoh: Roti bakwan">
+            </div>
+        </div>
+    </div>
+
+    <button onclick="hitungSemua()">HITUNG ANALISIS GIZI</button>
+
+    <div id="hasil" class="result-box">
+        <h3>Laporan Analisis Gizi Pasien</h3>
+        <p id="hasil_id"></p>
+        
+        <div class="grid">
+            <div class="section">
+                <strong>Status Gizi:</strong><br>
+                IMT: <span id="res_imt"></span><br>
+                BBI: <span id="res_bbi"></span> kg
+            </div>
+            <div class="section">
+                <strong>Target (Mifflin):</strong><br>
+                Energi: <span id="res_en"></span> kkal<br>
+                P: <span id="res_pro"></span> g | L: <span id="res_lem"></span> g | K: <span id="res_kar"></span> g
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Target (Kebutuhan)</th>
+                    <th>Asupan (Recall)</th>
+                    <th>% Capaian</th>
+                </tr>
+            </thead>
+            <tbody id="tabel_asupan"></tbody>
+        </table>
+        <p id="kesimpulan" style="font-weight: bold; margin-top: 15px;"></p>
+    </div>
+</div>
+
+<script>
+const dataMenu = {
+    "nasi_p": {e: 381, p: 12.1, l: 6.7, k: 66},
+    "tim_p": {e: 300, p: 10.1, l: 1.7, k: 46},
+    "bubur_p": {e: 294, p: 10.1, l: 6.8, k: 46},
+    "tim_v": {e: 588, p: 24.7, l: 15, k: 84.7},
+    "tim_r": {e: 538, p: 17.7, l: 13, k: 84.8},
+    "bubur_v": {e: 500, p: 22.3, l: 15, k: 59.8},
+    "bubur_r": {e: 500, p: 15.3, l: 13, k: 59.8},
+    "none": {e: 0, p: 0, l: 0, k: 0}
+};
+
+function hitungUsia() {
+    const tgl = new Date(document.getElementById('tgl_lahir').value);
+    const today = new Date();
+    let usia = today.getFullYear() - tgl.getFullYear();
+    if (today.getMonth() < tgl.getMonth() || (today.getMonth() == tgl.getMonth() && today.getDate() < tgl.getDate())) usia--;
+    document.getElementById('usia').value = usia;
+}
+
+function hitungSemua() {
+    const bb = parseFloat(document.getElementById('bb').value);
+    const tb = parseFloat(document.getElementById('tb').value);
+    const usia = parseInt(document.getElementById('usia').value);
+    const jk = document.getElementById('jk').value;
+
+    if(!bb || !tb || !usia) return alert("Mohon lengkapi Data Antropometri!");
+
+    // 1. IMT & BBI (Broca)
+    const imt = bb / ((tb/100)**2);
+    let bbi = (tb - 100) - ((tb - 100) * 0.1);
+    if (jk === "laki" && tb < 160) bbi = tb - 100;
+    if (jk === "perempuan" && tb < 150) bbi = tb - 100;
+
+    // 2. Kebutuhan Energi (Mifflin-St Jeor)
+    let bmr = (10 * bb) + (6.25 * tb) - (5 * usia);
+    bmr = (jk === "laki") ? bmr + 5 : bmr - 161;
+    const tee = bmr * 1.2*1.1; // Faktor Aktivitas Bedrest/Rawat Inap
+    const pro = (tee * 0.15) / 4;
+    const lem = (tee * 0.25) / 9;
+    const kar = (tee * 0.60) / 4;
+
+    // 3. Analisis Recall
+    const p_pagi = document.getElementById('p_pagi').value / 100;
+    const p_sm = document.getElementById('p_siangmalam').value / 100;
+    
+    const m_pagi = dataMenu[document.getElementById('r_pagi').value];
+    const m_sm = dataMenu[document.getElementById('r_siangmalam').value];
+
+    // Total asupan = Pagi + (Siang + Malam)
+    const totalAsupan = {
+        e: (m_pagi.e * p_pagi) + (m_sm.e * p_sm * 2),
+        p: (m_pagi.p * p_pagi) + (m_sm.p * p_sm * 2),
+        l: (m_pagi.l * p_pagi) + (m_sm.l * p_sm * 2),
+        k: (m_pagi.k * p_pagi) + (m_sm.k * p_sm * 2)
+    };
+
+    // Tampilkan Hasil
+    document.getElementById('hasil').style.display = 'block';
+    document.getElementById('res_imt').innerText = imt.toFixed(1);
+    document.getElementById('res_bbi').innerText = bbi.toFixed(1);
+    document.getElementById('res_en').innerText = tee.toFixed(0);
+    document.getElementById('res_pro').innerText = pro.toFixed(1);
+    document.getElementById('res_lem').innerText = lem.toFixed(1);
+    document.getElementById('res_kar').innerText = kar.toFixed(1);
+
+    const labels = ["Energi (kkal)", "Protein (g)", "Lemak (g)", "Karbohidrat (g)"];
+    const targets = [tee, pro, lem, kar];
+    const inputs = [totalAsupan.e, totalAsupan.p, totalAsupan.l, totalAsupan.k];
+    
+    let rows = "";
+    for(let i=0; i<4; i++){
+        const persen = (inputs[i] / targets[i]) * 100;
+        rows += `<tr>
+            <td>${labels[i]}</td>
+            <td>${targets[i].toFixed(1)}</td>
+            <td>${inputs[i].toFixed(1)}</td>
+            <td>${persen.toFixed(1)}%</td>
+        </tr>`;
+    }
+    document.getElementById('tabel_asupan').innerHTML = rows;
+
+    // Kesimpulan Gizi
+    let kesimpulan = (totalAsupan.e / tee * 100 < 80) ? "Asupan Kurang ( < 80% kebutuhan)" : "Asupan Adekuat";
+    document.getElementById('kesimpulan').innerText = "Kesimpulan: " + kesimpulan;
+}
+</script>
+
+</body>
+</html>
